@@ -1699,7 +1699,7 @@ class Geoserver:
             return "Error: {}".format(e)
 
     def publish_featurestore(
-        self, store_name: str, pg_table: str, workspace: Optional[str] = None, title: Optional[str] = None
+        self, store_name: str, pg_table: str, workspace: Optional[str] = None, title: Optional[str] = None, keywords: List[str] = []
     ):
         """
 
@@ -1709,25 +1709,36 @@ class Geoserver:
         pg_table : str
         workspace : str, optional
         title : str, optional
-
+        keywords : list, optional
         Returns
         -------
 
         Notes
         -----
-        Only user for postgis vector data
+        Only used for postgis vector data
         input parameters: specify the name of the table in the postgis database to be published, specify the store,workspace name, and  the Geoserver user name, password and URL
         """
+        assert isinstance(
+            keywords, list
+        ), "Keywords must be of type List:['keyword1','keyword2'...]"
+        
         if workspace is None:
             workspace = "default"
         if title is None:
             title = pg_table
+        keywords_xml = ""
+        if len(keywords) >= 1:
+
+            keyword_xml_list: List[str] = [
+                f"<keyword>{keyword}</keyword>" for keyword in keywords
+            ]
+            keywords_xml: str = f"<keywords>{''.join(['{}']*len(keywords)).format(*keyword_xml_list)}</keywords>"
 
         url = "{}/rest/workspaces/{}/datastores/{}/featuretypes/".format(
             self.service_url, workspace, store_name
         )
 
-        layer_xml = "<featureType><name>{}</name><title>{}</title></featureType>".format(pg_table,title)
+        layer_xml = "<featureType><name>{}</name><title>{}</title>{}</featureType>".format(pg_table,title,keywords_xml)
         headers = {"content-type": "text/xml"}
 
         try:
